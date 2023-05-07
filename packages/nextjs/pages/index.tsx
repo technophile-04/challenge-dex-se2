@@ -1,55 +1,119 @@
+import { ChangeEvent, useState } from "react";
 import Head from "next/head";
-import Link from "next/link";
+import { ethers } from "ethers";
 import type { NextPage } from "next";
-import { BugAntIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import Curve from "~~/components/challenge/Curve";
+import { Address, Balance } from "~~/components/scaffold-eth";
+import { useAccountBalance, useDeployedContractInfo, useScaffoldContractRead } from "~~/hooks/scaffold-eth";
+
+// REGEX for number inputs (only allow numbers and a single decimal point)
+export const NUMBER_REGEX = /^\.?\d+\.?\d*$/;
+
+const initialState = {
+  ethToToken: "0",
+  tokenToEth: "0",
+};
 
 const Home: NextPage = () => {
+  const [form, setForm] = useState(initialState);
+  console.log("⚡️ ~ file: index.tsx:16 ~ form:", form);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm(prevFormState => ({ ...prevFormState, [name]: value }));
+  };
+
+  const { data: DEXContract } = useDeployedContractInfo("DEX");
+  const { data: dexBalloonsBalance } = useScaffoldContractRead({
+    contractName: "Balloons",
+    functionName: "balanceOf",
+    args: [DEXContract?.address],
+  });
+  const { data: totalLiquidity } = useScaffoldContractRead({
+    contractName: "DEX",
+    functionName: "totalLiquidity",
+  });
+  const { balance: dexContractBalance } = useAccountBalance(DEXContract?.address);
+
   return (
     <>
       <Head>
         <title>Scaffold-ETH 2 App</title>
         <meta name="description" content="Created with 🏗 scaffold-eth-2" />
       </Head>
-
-      <div className="flex items-center flex-col flex-grow pt-10">
-        <div className="px-5">
-          <h1 className="text-center mb-8">
-            <span className="block text-2xl mb-2">Welcome to</span>
-            <span className="block text-4xl font-bold">Scaffold-ETH 2</span>
-          </h1>
-          <p className="text-center text-lg">
-            Get started by editing{" "}
-            <code className="italic bg-base-300 text-base font-bold">packages/nextjs/pages/index.tsx</code>
-          </p>
-          <p className="text-center text-lg">
-            Edit your smart contract <code className="italic bg-base-300 text-base font-bold">YourContract.sol</code> in{" "}
-            <code className="italic bg-base-300 text-base font-bold">packages/hardhat/contracts</code>
-          </p>
-        </div>
-
-        <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
-          <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <BugAntIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Tinker with your smart contract using the{" "}
-                <Link href="/debug" passHref className="link">
-                  Debug Contract
-                </Link>{" "}
-                tab.
-              </p>
+      {/* Container */}
+      <div className="p-4 flex">
+        {/* Form and Contract Details */}
+        <div className="flex flex-col">
+          {/*  DEX  details */}
+          <div className="flex flex-col space-y-2">
+            <p className="my-0 text-2xl text-center">DEX Contract</p>
+            <div className="flex space-x-4">
+              <Address address={DEXContract?.address} />
+              <div className="flex items-center">
+                <p className="py-0 text-lg my-0">⚖️</p>
+                <Balance address={DEXContract?.address} />
+              </div>
+              <div className="flex items-center space-x-2">
+                <p className="my-0 text-lg">🎈</p>
+                {dexBalloonsBalance && <p className="py-0 text-lg">{ethers.utils.formatEther(dexBalloonsBalance)}</p>}
+              </div>
             </div>
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <SparklesIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Experiment with{" "}
-                <Link href="/example-ui" passHref className="link">
-                  Example UI
-                </Link>{" "}
-                to build your own UI.
-              </p>
+            <div className="flex flex-col space-y-3">
+              {/* ETH to Token */}
+              <div className="flex items-center space-x-4">
+                <p className="my-0 text-lg">ethToToken</p>
+                <div className="rounded-2xl border-2 border-base-300">
+                  <div className="form-control grow">
+                    <div className="flex w-full items-center">
+                      <input
+                        name="ethToToken"
+                        value={form.ethToToken}
+                        onChange={handleInputChange}
+                        // value={tokenValue3}
+                        // onChange={e => setTokenValue3(e.target.value)}
+                        type="text"
+                        placeholder="0.00"
+                        className="input input-ghost pl-3 focus:outline-none focus:bg-transparent focus:text-gray-400 h-[2.2rem] min-h-[2.2rem] border w-full font-medium placeholder:text-accent/50 text-gray-400 grow"
+                      />
+                      <div className="btn bg-primary text-white btn-sm border-none rounded-2xl m-0 text-2xl">💸</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Token to ETH */}
+              <div className="flex items-center space-x-4">
+                <p className="my-0 text-lg">tokenToEth</p>
+                <div className="rounded-2xl border-2 border-base-300">
+                  <div className="form-control grow">
+                    <div className="flex w-full items-center">
+                      <input
+                        name="tokenToEth"
+                        value={form.tokenToEth}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        type="text"
+                        className="input input-ghost pl-3 focus:outline-none focus:bg-transparent focus:text-gray-400 h-[2.2rem] min-h-[2.2rem] border w-full font-medium placeholder:text-accent/50 text-gray-400 grow"
+                      />
+                      <div className="btn bg-primary text-white btn-sm border-none rounded-2xl text-2xl">🔏</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+          <div className="divider">Liquidity ({totalLiquidity && ethers.utils.formatEther(totalLiquidity)})</div>
+        </div>
+        {/* Curve */}
+        <div>
+          <Curve
+            addingEth={NUMBER_REGEX.test(form.ethToToken) ? form.ethToToken : 0}
+            addingToken={NUMBER_REGEX.test(form.tokenToEth) ? form.tokenToEth : 0}
+            ethReserve={dexContractBalance && parseFloat("" + dexContractBalance)}
+            tokenReserve={dexBalloonsBalance && parseFloat(ethers.utils.formatEther(dexBalloonsBalance))}
+            width={500}
+            height={500}
+          />
         </div>
       </div>
     </>
