@@ -30,6 +30,7 @@ const Home: NextPage = () => {
   const { address } = useAccount();
 
   const { data: DEXContract } = useDeployedContractInfo("DEX");
+  const { data: balloonsContract } = useDeployedContractInfo("Balloons");
 
   // ----DEX READS----
   const { balance: dexContractBalance } = useAccountBalance(DEXContract?.address);
@@ -85,7 +86,7 @@ const Home: NextPage = () => {
       {/* Container */}
       <div className="p-4 flex justify-center space-x-20">
         {/* Form and Contract Details */}
-        <div className="flex flex-col">
+        <div className="flex flex-col space-y-4">
           {/*  DEX  details */}
           <div className="flex flex-col space-y-3 bg-base-300 p-8 rounded-2xl shadow-xl">
             <p className="my-0 text-2xl text-center">DEX Contract</p>
@@ -161,6 +162,13 @@ const Home: NextPage = () => {
             </div>
           </div>
           {/* Balloons details */}
+          <div className="flex flex-col space-y-3 bg-base-300 p-8 rounded-2xl shadow-xl">
+            <p className="my-0 text-2xl text-center">Balloons Contract</p>
+            <div className="flex justify-center">
+              <Address address={balloonsContract?.address} />
+            </div>
+            <div className="flex flex-col space-y-3">{/* Balloons Input*/}</div>
+          </div>
         </div>
         {/* Curve */}
         <div>
