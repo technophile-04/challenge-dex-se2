@@ -5,7 +5,7 @@ import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { ChallengeInput } from "~~/components/challenge/ChallengeInputs";
 import Curve from "~~/components/challenge/Curve";
-import { Address, Balance } from "~~/components/scaffold-eth";
+import { Address, AddressInput, Balance, IntegerInput, displayTxResult } from "~~/components/scaffold-eth";
 import {
   useAccountBalance,
   useDeployedContractInfo,
@@ -16,15 +16,23 @@ import {
 // REGEX for number inputs (only allow numbers and a single decimal point)
 export const NUMBER_REGEX = /^\.?\d+\.?\d*$/;
 
-const initialState = {
+const dexInitialFormState = {
   ethToToken: "0",
   tokenToEth: "0",
   deposit: "0",
   withdraw: "0",
 };
 
+const balloonInitialFormState = {
+  approveValue: "0",
+  approveAddress: "",
+  balanceOfAddress: "",
+};
+
 const Home: NextPage = () => {
-  const [dexForm, setDexForm] = useState(initialState);
+  const [dexForm, setDexForm] = useState(dexInitialFormState);
+  const [balloonsForm, setBalloonsForm] = useState(balloonInitialFormState);
+
   console.log("⚡️ ~ file: index.tsx:16 ~ form:", dexForm);
 
   const { address } = useAccount();
@@ -52,6 +60,11 @@ const Home: NextPage = () => {
     contractName: "Balloons",
     functionName: "balanceOf",
     args: [DEXContract?.address],
+  });
+  const { data: inputAddressBalloonsBalance, isFetching: isInputBalloonsBalanceFetching } = useScaffoldContractRead({
+    contractName: "Balloons",
+    functionName: "balanceOf",
+    args: [balloonsForm.balanceOfAddress],
   });
 
   const { data: connectedAccountAllowance } = useScaffoldContractRead({
@@ -167,7 +180,58 @@ const Home: NextPage = () => {
             <div className="flex justify-center">
               <Address address={balloonsContract?.address} />
             </div>
-            <div className="flex flex-col space-y-3">{/* Balloons Input*/}</div>
+            <div className="flex flex-col space-y-3">
+              <div className="flex items-start space-x-8">
+                <p className="my-0 text-lg">approve</p>
+                <div className="flex flex-col space-y-2">
+                  <div className="border-2 border-base-100 rounded-3xl">
+                    <IntegerInput
+                      value={balloonsForm.approveValue}
+                      onChange={newApproveValue => {
+                        // @ts-expect-error TODO: Fix this
+                        setBalloonsForm(prevFormState => ({ ...prevFormState, approveValue: newApproveValue }));
+                      }}
+                    />
+                  </div>
+                  <div className="border-2 border-base-100 rounded-3xl">
+                    <AddressInput
+                      placeholder="address"
+                      value={balloonsForm.approveAddress}
+                      onChange={newAddress =>
+                        setBalloonsForm(prevFormState => ({ ...prevFormState, approveAddress: newAddress }))
+                      }
+                    />
+                  </div>
+                  <div className="btn btn-primary btn-sm self-end">Send 💸</div>
+                </div>
+              </div>
+              <div className="flex items-start space-x-8">
+                <p className="my-0 text-lg">balanceOf</p>
+                <div className="flex flex-col space-y-2">
+                  <div className="border-2 border-base-100 rounded-3xl">
+                    <AddressInput
+                      placeholder="address"
+                      value={balloonsForm.balanceOfAddress}
+                      onChange={newAddress =>
+                        setBalloonsForm(prevFormState => ({ ...prevFormState, balanceOfAddress: newAddress }))
+                      }
+                    />
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <div className="flex-grow">
+                      {inputAddressBalloonsBalance !== null && inputAddressBalloonsBalance !== undefined && (
+                        <span className="block bg-secondary rounded-3xl text-sm px-4 py-1.5">
+                          <strong>Result</strong>: {displayTxResult(inputAddressBalloonsBalance)}
+                        </span>
+                      )}
+                    </div>
+                    <button className={`btn btn-secondary btn-sm ${isInputBalloonsBalanceFetching ? "loading" : ""}`}>
+                      Read 📡
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         {/* Curve */}
